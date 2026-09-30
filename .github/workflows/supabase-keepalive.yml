@@ -5,12 +5,18 @@ on:
     - cron: "0 12 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Mantener Supabase activo
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Consultar Supabase
         run: |
           curl --fail --silent --show-error \
             "${SUPABASE_URL}/rest/v1/movimientos?select=id&limit=1" \
@@ -19,3 +25,12 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+
+      - name: Generar actividad en GitHub
+        run: |
+          date -u +"%Y-%m-%d %H:%M:%S UTC" > heartbeat.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add heartbeat.txt
+          git commit -m "chore: heartbeat"
+          git push
